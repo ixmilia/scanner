@@ -5,8 +5,158 @@
 <html>
 <head>
     <title>Scanner</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        h1 { margin-bottom: 20px; }
+        .container { display: flex; gap: 40px; }
+        .panel { flex: 1; }
+        .panel h2 { margin-bottom: 10px; }
+        .thumbnail-grid {
+            display: flex; flex-wrap: wrap; gap: 10px;
+            max-height: 600px; overflow-y: auto;
+            border: 1px solid #ccc; padding: 10px; border-radius: 4px;
+        }
+        .thumbnail-item {
+            cursor: pointer; border: 2px solid transparent;
+            border-radius: 4px; padding: 4px; text-align: center;
+            width: 120px; transition: border-color 0.2s;
+        }
+        .thumbnail-item:hover { border-color: #0078d4; }
+        .thumbnail-item img { max-width: 110px; max-height: 110px; display: block; margin: 0 auto; }
+        .thumbnail-item .name { font-size: 11px; margin-top: 4px; word-break: break-all; }
+        .selected-list {
+            list-style: none; padding: 0;
+            border: 1px solid #ccc; border-radius: 4px;
+            min-height: 100px; max-height: 600px; overflow-y: auto;
+        }
+        .selected-list li {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; border-bottom: 1px solid #eee;
+        }
+        .selected-list li:last-child { border-bottom: none; }
+        .selected-list img { width: 50px; height: 50px; object-fit: cover; border-radius: 2px; }
+        .selected-list .remove-btn {
+            margin-left: auto; background: #d44; color: #fff;
+            border: none; border-radius: 4px; padding: 4px 10px;
+            cursor: pointer; font-size: 12px;
+        }
+        .selected-list .remove-btn:hover { background: #b33; }
+        .empty-message { color: #888; padding: 20px; text-align: center; }
+    </style>
 </head>
 <body>
-    <h1>@Model.Message</h1>
+    <button id="generatePdfBtn" onclick="generatePdf()">Generate PDF</button>
+    <h1>Scanner</h1>
+    <div class="container">
+        <div class="panel">
+            <h2>Available Images</h2>
+            <div class="thumbnail-grid" id="thumbnailGrid">
+                <div class="empty-message" id="loadingMessage">Loading images...</div>
+            </div>
+        </div>
+        <div class="panel">
+            <h2>Selected Images</h2>
+            <ul class="selected-list" id="selectedList">
+                <li class="empty-message" id="emptySelectedMessage">Click an image to add it to this list.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const selectedImages = [];
+
+        async function loadImages() {
+            const grid = document.getElementById('thumbnailGrid');
+            try {
+                const response = await fetch('/api/images');
+                const images = await response.json();
+                grid.innerHTML = '';
+                if (images.length === 0) {
+                    grid.innerHTML = '<div class="empty-message">No images found. Set the ImageDirectory in appsettings.json.</div>';
+                    return;
+                }
+                for (const name of images) {
+                    const item = document.createElement('div');
+                    item.className = 'thumbnail-item';
+                    item.onclick = () => addToList(name);
+                    item.innerHTML = `<img src="/api/images/${encodeURIComponent(name)}/thumbnail" alt="${name.replace(/"/g, '&quot;')}" /><div class="name">${name.replace(/</g, '&lt;')}</div>`;
+                    grid.appendChild(item);
+                }
+            } catch {
+                grid.innerHTML = '<div class="empty-message">Failed to load images.</div>';
+            }
+        }
+
+        function addToList(name) {
+            if (selectedImages.some(img => img.fileName === name)) return;
+            selectedImages.push({ fileName: name, imageType: 'image', rotation: 0 });
+            renderSelectedList();
+        }
+
+        function removeFromList(name) {
+            const idx = selectedImages.findIndex(img => img.fileName === name);
+            if (idx >= 0) selectedImages.splice(idx, 1);
+            renderSelectedList();
+        }
+
+        function changeImageType(name, type) {
+            const img = selectedImages.find(img => img.fileName === name);
+            if (img) img.imageType = type;
+        }
+
+        function changeRotation(name, rotation) {
+            const img = selectedImages.find(img => img.fileName === name);
+            if (img) {
+                img.rotation = parseInt(rotation);
+                renderSelectedList();
+            }
+        }
+
+        function renderSelectedList() {
+            const list = document.getElementById('selectedList');
+            if (selectedImages.length === 0) {
+                list.innerHTML = '<li class="empty-message" id="emptySelectedMessage">Click an image to add it to this list.</li>';
+                return;
+            }
+            list.innerHTML = '';
+            for (const img of selectedImages) {
+                const li = document.createElement('li');
+                const escapedName = img.fileName.replace(/'/g, "\\'");
+                li.innerHTML = `<img src="/api/images/${encodeURIComponent(img.fileName)}/thumbnail?rotation=${img.rotation}" alt="${img.fileName.replace(/"/g, '&quot;')}" /><span>${img.fileName.replace(/</g, '&lt;')}</span><select onchange="changeImageType('${escapedName}', this.value)"><option value="image"${img.imageType === 'image' ? ' selected' : ''}>Image</option><option value="document"${img.imageType === 'document' ? ' selected' : ''}>Document</option></select><select onchange="changeRotation('${escapedName}', this.value)"><option value="0"${img.rotation === 0 ? ' selected' : ''}>0°</option><option value="90"${img.rotation === 90 ? ' selected' : ''}>90°</option><option value="180"${img.rotation === 180 ? ' selected' : ''}>180°</option><option value="270"${img.rotation === 270 ? ' selected' : ''}>270°</option></select><button class="remove-btn" onclick="removeFromList('${escapedName}')">Remove</button>`;
+                list.appendChild(li);
+            }
+        }
+
+        loadImages();
+
+        async function generatePdf() {
+            if (selectedImages.length === 0) {
+                alert('No images selected.');
+                return;
+            }
+            const response = await fetch('?handler=GeneratePdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify(selectedImages)
+            });
+            if (!response.ok) {
+                alert('Failed to generate PDF.');
+                return;
+            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'scan.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+    @Html.AntiForgeryToken()
 </body>
 </html>
