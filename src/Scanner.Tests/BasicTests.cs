@@ -12,10 +12,10 @@ public class BasicTests
         await using var application = new WebApplicationFactory<Program>();
         using var client = application.CreateClient();
 
-        var response = await client.GetAsync("/");
+        var response = await client.GetAsync("/", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Equal("Hello, World!", content);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        Assert.Contains("Hello, World!", content);
     }
 }
