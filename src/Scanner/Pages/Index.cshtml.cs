@@ -95,7 +95,7 @@ public class IndexModel : PageModel
             using var trimmedImage = SKImage.FromBitmap(bitmap);
 
             PdfImageObject imageObject;
-            if (selectedImage.ImageType is "grayscale" or "document")
+            if (selectedImage.ImageType is "document")
             {
                 var bwData = new byte[(targetWidth + 7) / 8 * targetHeight];
                 using var trimmedBitmap = SKBitmap.FromImage(trimmedImage);
@@ -119,10 +119,28 @@ public class IndexModel : PageModel
                     }
                 }
 
-                IPdfEncoder encoder = selectedImage.ImageType == "document"
-                    ? new CcittGroup4Encoder(targetWidth, targetHeight)
-                    : new FlateEncoder();
-                imageObject = new PdfImageObject(targetWidth, targetHeight, PdfColorSpace.DeviceGray, 1, bwData, encoder);
+                imageObject = new PdfImageObject(targetWidth, targetHeight, PdfColorSpace.DeviceGray, 1, bwData, new CcittGroup4Encoder(targetWidth, targetHeight));
+            }
+            else if (selectedImage.ImageType is "grayscale")
+            {
+                using var grayBitmap = new SKBitmap(targetWidth, targetHeight, SKColorType.Gray8, SKAlphaType.Opaque);
+                using (var canvas = new SKCanvas(grayBitmap))
+                {
+                    using var paint = new SKPaint();
+                    paint.ColorFilter = SKColorFilter.CreateColorMatrix(new float[]
+                    {
+                        0.299f, 0.587f, 0.114f, 0, 0,
+                        0.299f, 0.587f, 0.114f, 0, 0,
+                        0.299f, 0.587f, 0.114f, 0, 0,
+                        0,      0,      0,      1, 0,
+                    });
+                    canvas.DrawImage(trimmedImage, 0, 0, paint);
+                }
+
+                using var grayImage = SKImage.FromBitmap(grayBitmap);
+                using var jpegData = grayImage.Encode(SKEncodedImageFormat.Jpeg, 75);
+                var jpegBytes = jpegData.ToArray();
+                imageObject = new PdfImageObject(targetWidth, targetHeight, PdfColorSpace.DeviceGray, 8, jpegBytes, new CustomPassThroughEncoder("DCTDecode"));
             }
             else
             {
