@@ -25,14 +25,17 @@ public class IndexModel : PageModel
     }
 
     public record SelectedImage(string FileName, string ImageType, int Rotation);
+    public record GeneratePdfRequest(string FileName, SelectedImage[] Images);
 
-    public IActionResult OnPostGeneratePdf([FromBody] SelectedImage[] images)
+    public IActionResult OnPostGeneratePdf([FromBody] GeneratePdfRequest request)
     {
+        var images = request?.Images;
         if (images is null || images.Length == 0)
         {
             return BadRequest();
         }
 
+        var outputFileName = string.IsNullOrWhiteSpace(request.FileName) ? "scan" : request.FileName;
         var fileNames = images.Select(i => i.FileName).ToArray();
 
         var imageDirectory = _config["ImageDirectory"] ?? Environment.GetEnvironmentVariable("IMAGES_DIR") ?? string.Empty;
@@ -141,7 +144,7 @@ public class IndexModel : PageModel
         pdf.Save(ms);
         ms.Position = 0;
 
-        return File(ms, "application/pdf", "scan.pdf");
+        return File(ms, "application/pdf", outputFileName + ".pdf");
     }
 
     private static SKBitmap RotateBitmap(SKBitmap original, SKEncodedOrigin origin)
@@ -152,7 +155,7 @@ public class IndexModel : PageModel
 
         switch (origin)
         {
-            case SKEncodedOrigin.RightTop: // 90° clockwise
+            case SKEncodedOrigin.RightTop: // 90ï¿½ clockwise
                 rotated = new SKBitmap(original.Height, original.Width, original.ColorType, original.AlphaType);
                 using (var c = new SKCanvas(rotated))
                 {
@@ -161,7 +164,7 @@ public class IndexModel : PageModel
                     c.DrawBitmap(original, 0, 0);
                 }
                 break;
-            case SKEncodedOrigin.BottomRight: // 180°
+            case SKEncodedOrigin.BottomRight: // 180ï¿½
                 using (var c = new SKCanvas(rotated))
                 {
                     c.Translate(rotated.Width, rotated.Height);
@@ -169,7 +172,7 @@ public class IndexModel : PageModel
                     c.DrawBitmap(original, 0, 0);
                 }
                 break;
-            case SKEncodedOrigin.LeftBottom: // 270° clockwise
+            case SKEncodedOrigin.LeftBottom: // 270ï¿½ clockwise
                 rotated = new SKBitmap(original.Height, original.Width, original.ColorType, original.AlphaType);
                 using (var c = new SKCanvas(rotated))
                 {
@@ -178,7 +181,7 @@ public class IndexModel : PageModel
                     c.DrawBitmap(original, 0, 0);
                 }
                 break;
-            default: // 0° — no rotation
+            default: // 0ï¿½ ï¿½ no rotation
                 using (var c = new SKCanvas(rotated))
                 {
                     c.DrawBitmap(original, 0, 0);

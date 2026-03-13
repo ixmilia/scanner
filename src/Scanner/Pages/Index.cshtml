@@ -45,6 +45,11 @@
     </style>
 </head>
 <body>
+    <div style="margin-bottom: 10px;">
+        <label for="fileNameInput">File name:</label>
+        <input type="text" id="fileNameInput" value="scan" style="margin-left: 6px; padding: 4px 8px;" />
+        <span>.pdf</span>
+    </div>
     <button id="generatePdfBtn" onclick="generatePdf()">Generate PDF</button>
     <h1>Scanner</h1>
     <div class="container">
@@ -150,13 +155,14 @@
                 alert('No images selected.');
                 return;
             }
+            const fileName = document.getElementById('fileNameInput').value.trim() || 'scan';
             const response = await fetch('?handler=GeneratePdf', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                 },
-                body: JSON.stringify(selectedImages)
+                body: JSON.stringify({ fileName: fileName, images: selectedImages })
             });
             if (!response.ok) {
                 alert('Failed to generate PDF.');
@@ -166,7 +172,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'scan.pdf';
+            a.download = fileName + '.pdf';
             document.body.appendChild(a);
             a.click();
             a.remove();
