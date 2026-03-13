@@ -95,7 +95,7 @@ public class IndexModel : PageModel
             using var trimmedImage = SKImage.FromBitmap(bitmap);
 
             PdfImageObject imageObject;
-            if (selectedImage.ImageType is "document" or "fax")
+            if (selectedImage.ImageType is "grayscale" or "document")
             {
                 var bwData = new byte[(targetWidth + 7) / 8 * targetHeight];
                 using var trimmedBitmap = SKBitmap.FromImage(trimmedImage);
@@ -119,7 +119,7 @@ public class IndexModel : PageModel
                     }
                 }
 
-                IPdfEncoder encoder = selectedImage.ImageType == "fax"
+                IPdfEncoder encoder = selectedImage.ImageType == "document"
                     ? new CcittGroup4Encoder(targetWidth, targetHeight)
                     : new FlateEncoder();
                 imageObject = new PdfImageObject(targetWidth, targetHeight, PdfColorSpace.DeviceGray, 1, bwData, encoder);

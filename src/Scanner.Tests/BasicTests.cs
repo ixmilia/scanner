@@ -183,6 +183,21 @@ public class IntegrationTests : IDisposable
     }
 
     [Fact]
+    public async Task GeneratePdf_GrayscaleType_ReturnsPdf()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var response = await PostGeneratePdf(client, new
+        {
+            fileName = "doc",
+            images = new[] { new { fileName = "test.png", imageType = "grayscale", rotation = 0 } }
+        });
+
+        await AssertIsPdfResponse(response, "doc.pdf");
+    }
+
+    [Fact]
     public async Task GeneratePdf_DocumentType_ReturnsPdf()
     {
         await using var factory = CreateFactory();
@@ -195,21 +210,6 @@ public class IntegrationTests : IDisposable
         });
 
         await AssertIsPdfResponse(response, "doc.pdf");
-    }
-
-    [Fact]
-    public async Task GeneratePdf_FaxType_ReturnsPdf()
-    {
-        await using var factory = CreateFactory();
-        using var client = factory.CreateClient();
-
-        var response = await PostGeneratePdf(client, new
-        {
-            fileName = "fax",
-            images = new[] { new { fileName = "test.png", imageType = "fax", rotation = 0 } }
-        });
-
-        await AssertIsPdfResponse(response, "fax.pdf");
     }
 
     [Theory]
@@ -243,7 +243,7 @@ public class IntegrationTests : IDisposable
             images = new[]
             {
                 new { fileName = "test.png", imageType = "photo", rotation = 0 },
-                new { fileName = "page2.png", imageType = "fax", rotation = 90 },
+                new { fileName = "page2.png", imageType = "document", rotation = 90 },
             }
         });
 
