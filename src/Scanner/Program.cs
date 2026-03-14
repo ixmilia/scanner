@@ -55,7 +55,7 @@ app.MapGet("/api/images/{fileName}/thumbnail", (string fileName, int? rotation, 
         return Results.StatusCode(500);
     }
 
-    const int thumbSize = 200;
+    const int thumbSize = 400;
     var ratioX = (double)thumbSize / bitmap.Width;
     var ratioY = (double)thumbSize / bitmap.Height;
     var ratio = Math.Min(ratioX, ratioY);
