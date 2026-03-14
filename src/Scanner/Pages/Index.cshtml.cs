@@ -4,6 +4,7 @@ using BitMiracle.LibTiff.Classic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SkiaSharp;
+using IxMilia.Pdf.Objects;
 
 namespace Scanner.Pages;
 
@@ -120,6 +121,10 @@ public class IndexModel : PageModel
                 }
 
                 imageObject = new PdfImageObject(targetWidth, targetHeight, PdfColorSpace.DeviceGray, 1, bwData, new CcittGroup4Encoder(targetWidth, targetHeight));
+                imageObject.DecodeParameters.Items["K"] = new PdfInteger(-1);
+                imageObject.DecodeParameters.Items["Columns"] = new PdfInteger(targetWidth);
+                imageObject.DecodeParameters.Items["Rows"] = new PdfInteger(targetHeight);
+                imageObject.DecodeParameters.Items["BlackIs1"] = new PdfBoolean(true);
             }
             else if (selectedImage.ImageType is "grayscale")
             {
@@ -221,7 +226,7 @@ public class IndexModel : PageModel
             _height = height;
         }
 
-        public string DisplayName => $"CCITTFaxDecode]\r\n  /DecodeParms [<</K -1 /Columns {_width} /Rows {_height} /BlackIs1 true>>";
+        public string DisplayName => "CCITTFaxDecode";
 
         public byte[] Encode(byte[] data)
         {
