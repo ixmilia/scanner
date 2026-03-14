@@ -17,6 +17,7 @@ app.MapGet("/api/images", (IConfiguration config) =>
 
     var images = Directory.EnumerateFiles(imageDirectory)
         .Where(f => Path.GetExtension(f).Equals(".png", StringComparison.OrdinalIgnoreCase))
+        .OrderBy(f => new FileInfo(f).CreationTimeUtc)
         .Select(Path.GetFileName)
         .ToArray();
     return Results.Ok(images);
