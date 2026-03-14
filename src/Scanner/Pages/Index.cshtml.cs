@@ -35,7 +35,7 @@ public class IndexModel : PageModel
             return BadRequest();
         }
 
-        var outputFileName = string.IsNullOrWhiteSpace(request.FileName) ? "scan" : request.FileName;
+        var outputFileName = string.IsNullOrWhiteSpace(request!.FileName) ? "scan" : request.FileName;
         var fileNames = images.Select(i => i.FileName).ToArray();
 
         var imageDirectory = _config["ImageDirectory"] ?? Environment.GetEnvironmentVariable("IMAGES_DIR") ?? string.Empty;
