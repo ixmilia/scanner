@@ -68,7 +68,7 @@
             </div>
         </div>
         <div class="panel">
-            <h2>Selected Images</h2>
+            <h2>Selected Images <button onclick="clearSelectedList()" style="font-size: 12px; padding: 2px 8px; margin-left: 10px;">Clear</button></h2>
             <ul class="selected-list" id="selectedList">
                 <li class="empty-message" id="emptySelectedMessage">Click an image to add it to this list.</li>
             </ul>
@@ -109,6 +109,11 @@
         function removeFromList(name) {
             const idx = selectedImages.findIndex(img => img.fileName === name);
             if (idx >= 0) selectedImages.splice(idx, 1);
+            renderSelectedList();
+        }
+
+        function clearSelectedList() {
+            selectedImages.length = 0;
             renderSelectedList();
         }
 
