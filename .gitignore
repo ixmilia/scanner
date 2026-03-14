@@ -1,6 +1,9 @@
 ## Images
 images/
 
+## Publish output
+publish/
+
 ## .NET
 bin/
 obj/
